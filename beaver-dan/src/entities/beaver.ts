@@ -14,6 +14,8 @@ export class Beaver {
   ty: number;
   mode: BeaverMode = 'swim';
   carrying = false;
+  /** Underwater: hidden from predators, on a breath timer (GameScene owns it). */
+  submerged = false;
   facing = 1;
 
   /** tiles per second */
@@ -39,7 +41,20 @@ export class Beaver {
 
   setCarrying(on: boolean): void {
     this.carrying = on;
-    this.carryLog.setVisible(on && this.mode === 'walk');
+    this.refreshCarryLog();
+  }
+
+  setSubmerged(on: boolean): void {
+    this.submerged = on;
+    this.body.setAlpha(on ? 0.45 : 1);
+    this.body.setTint(on ? 0x9ec8d8 : 0xffffff);
+    this.refreshCarryLog();
+  }
+
+  private refreshCarryLog(): void {
+    // logs are carried ashore and towed afloat, but never taken under
+    this.carryLog.setVisible(this.carrying && !this.submerged);
+    this.carryLog.y = this.mode === 'walk' ? -22 : -6;
   }
 
   /** Move by an input vector given in screen space (joystick / keys). */
@@ -52,7 +67,7 @@ export class Beaver {
     if (moving) {
       dtx /= len;
       dty /= len;
-      const speed = this.mode === 'swim' ? Beaver.WATER_SPEED : Beaver.LAND_SPEED;
+      const speed = (this.mode === 'swim' ? Beaver.WATER_SPEED : Beaver.LAND_SPEED) * (this.submerged ? 0.75 : 1);
       const nx = this.tx + dtx * speed * dt;
       const ny = this.ty + dty * speed * dt;
       if (this.world.inBounds(nx, this.ty)) this.tx = nx;
@@ -66,7 +81,8 @@ export class Beaver {
       this.mode = newMode;
       this.body.setTexture(newMode === 'swim' ? 'beaver-swim' : 'beaver');
       this.shadow.setVisible(newMode === 'walk');
-      this.carryLog.setVisible(this.carrying && newMode === 'walk');
+      if (newMode === 'walk' && this.submerged) this.setSubmerged(false);
+      this.refreshCarryLog();
     }
 
     // waddle / paddle bob — cheap, characterful

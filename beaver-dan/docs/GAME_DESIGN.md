@@ -48,13 +48,17 @@ The game is organised into **chapters that mirror a beaver's actual life history
 
 ## 4. Core mechanics (Chapter 4, implemented in prototype)
 
-- **Two movement states, one lesson:** Dan walks slowly and vulnerably on land, swims fast and safely in water. Every system reinforces it: wolves won't enter deep water; energy drains faster ashore.
-- **Gnaw & fell:** hold to gnaw aspen/willow (pines resist — beavers prefer soft hardwoods); trees fall, drop logs, leave stumps that resprout (coppicing) and can be nibbled for food.
-- **Haul & build:** carry/float logs to the *narrows* → dam rises in stages → **the water level actually rises**, recomputed from terrain elevation. Drowned trees become standing snags (new habitat). Then build the lodge in the new deep water.
-- **Needs:** one honest meter — energy. Eat bark, lily tubers, pond plants. Collapse = wake in a bank burrow, humbled.
-- **Predation:** a wolf hunts at night. Being caught is a scripted *close call*: Dan escapes shaken, loses energy and his log, and the Field Note explains why dispersing beavers die on land.
-- **Field Notes:** ~20 in the prototype, each triggered by the player's own action (first swim, first fell, first flood, first escape…).
-- **Sleep:** enter the lodge (first-person) to sleep to dawn — skipping night is *strategic* (the wolf) and *true* (beavers den up).
+- **Three movement states, one lesson:** Dan walks slowly and vulnerably on land, swims fast afloat, and can **dive** in deep water — hidden from predators on a breath timer. Wolves *wade*: the shallows are lunge range, so only the deep water a dam creates is true sanctuary.
+- **Gnaw & fell:** hold to gnaw aspen/willow (pines resist — beavers prefer soft hardwoods); escalating crunch audio; trees fall, drop logs, leave stumps that resprout (coppicing) and can be nibbled for food.
+- **Float, haul & build:** logs felled into water **drift downstream with the current** and self-deliver at the narrows — *where* you log becomes the puzzle. The dam rises in stages and **the water level actually rises**, staged as a letterboxed cinematic: camera pull-out, a 3-second water sweep, snags graying in one by one. Then build the lodge in the new deep water.
+- **Dig canals:** soft ground beside water can be excavated; the tile drops below the waterline and joins the floating network — the elevation model does the rest. (Beavers are second only to humans in reshaping terrain.)
+- **Maintain the dam:** at dusk a **leak** can spring — a spatialized trickle you locate by ear, exactly like a real beaver. Patch it with mud, or it tears wider overnight and the pond drops a stage. The defining beaver behaviour is the daily ritual.
+- **Tail-slap:** the player's iconic warning verb — a gunshot crack that sends nearby wolves loping for the treeline.
+- **Needs:** one honest meter — energy. Eat bark, lily tubers, pond plants. Collapse = wake in a bank burrow, humbled, your log left behind.
+- **Predation:** wolves hunt at night, in pairs from night three. Being caught is a scripted *close call*: Dan escapes shaken, drops his log, and the Field Note explains why dispersing beavers die on land.
+- **Field Notes:** 23 in the prototype, each triggered by the player's own action, archived permanently in the **Field Journal**.
+- **Sleep & save:** enter the lodge by swimming up through its underwater door (first-person, interactive); sleep to dawn — but a leak left running will cost you. Autosave at every beat; CONTINUE from the title.
+- **Audio:** fully procedural WebAudio — river ambience, trickle-as-gameplay-cue, tail-slap, growls, chimes, dawn/dusk piano stings, title motif. Zero binary assets, every call-site swappable for recorded audio.
 
 ### Engagement & retention (full game)
 - The valley persists and matures in real time between sessions (slow silt, regrowth, seasonal birds) — something new every return visit.
@@ -94,9 +98,9 @@ The game is organised into **chapters that mirror a beaver's actual life history
 
 ## 9. Milestones
 
-1. **M0 — this prototype:** Chapter 4 vertical slice, procedural art, smoke-tested. ✅
-2. **M1 — feel:** audio pass, haptics, tail-slap mechanic, swim-dive (hold to submerge), painted hero textures for Dan/trees/lodge.
-3. **M2 — winter:** Chapter 5 under-ice slice; save system; Field Journal.
+1. **M0 — vertical slice:** Chapter 4, procedural art, smoke-tested. ✅
+2. **M1 — feel:** procedural audio pass ✅, tail-slap ✅, dive ✅, leak/repair loop ✅, staged flood cinematic ✅, log floating + canals ✅, save system ✅, Field Journal ✅, native iOS/Android projects scaffolded ✅. Remaining: haptics, on-device touch tuning, painted hero textures for Dan/trees/lodge, recorded audio replacing synthesis.
+3. **M2 — winter:** Chapter 5 under-ice slice (dive + breath mechanics now exist to build on).
 4. **M3 — dispersal:** Chapter 3 journey + Chapter 1–2 tutorial-as-childhood; full life-loop demo.
-5. **M4 — stores:** Capacitor builds, donation rails, charity agreements, science review, accessibility (one-thumb play, colour-blind safe water/land contrast).
+5. **M4 — stores:** signed device builds, donation rails, charity agreements, science review, accessibility (one-thumb play, colour-blind safe water/land contrast).
 6. **M5 — live:** seasons in real time, photo mode, chapters 6–10 episodic releases.

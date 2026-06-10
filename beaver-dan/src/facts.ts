@@ -74,6 +74,27 @@ export const FIELD_NOTES: Record<string, FieldNote> = {
       'Beaver ponds raise the water table, filter sediment, slow floods and survive droughts. ' +
       'Frogs, fish, herons, otters and dragonflies all move into the wetland one beaver built.'
   },
+  firstPatch: {
+    id: 'firstPatch',
+    title: 'Bury the sound',
+    body:
+      'The sound of trickling water itself triggers repair. In famous experiments, beavers piled mud ' +
+      'and sticks onto loudspeakers playing recordings of leaks — on perfectly dry ground.'
+  },
+  firstCanal: {
+    id: 'firstCanal',
+    title: 'The canal builders',
+    body:
+      'Beavers dig canals — some hundreds of metres long — so they can float wood to the dam ' +
+      'instead of dragging it overland past waiting predators. After humans, no animal reshapes terrain more.'
+  },
+  firstFloat: {
+    id: 'firstFloat',
+    title: 'Let the river work',
+    body:
+      'Fell a tree by the water and the current does the hauling: beavers float branches downstream ' +
+      'to the dam. A log in the water is a delivery; a log on land is a risk.'
+  },
   firstFlood: {
     id: 'firstFlood',
     title: 'Dead trees, new life',

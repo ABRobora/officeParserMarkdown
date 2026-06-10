@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Beaver Dan</string>
+    <string name="title_activity_main">Beaver Dan</string>
+    <string name="package_name">co.robora.beaverdan</string>
+    <string name="custom_url_scheme">co.robora.beaverdan</string>
+</resources>

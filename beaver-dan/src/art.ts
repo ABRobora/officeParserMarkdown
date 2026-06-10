@@ -22,11 +22,23 @@ export function generateTextures(scene: Phaser.Scene): void {
     g.fillEllipse(24, 10, 44, 16);
   });
 
+  // ---- soft corner vignette to pull the frame together ----
+  make('vignette', 1280, 720, (g) => {
+    for (let i = 0; i < 14; i++) {
+      const a = 0.4 * Math.pow(1 - i / 14, 1.6);
+      g.lineStyle(54, 0x14202e, a);
+      g.strokeEllipse(640, 360, 1750 - i * 40, 1150 - i * 26);
+    }
+  });
+
   // ---- Beaver Dan, walking (side profile, flipX for direction) ----
   make('beaver', 52, 40, (g) => {
     // tail
     g.fillStyle(PAL.beaverTail, 1);
     g.fillEllipse(10, 30, 20, 9);
+    g.lineStyle(1, mix(PAL.beaverTail, 0xffffff, 0.3), 0.7);
+    g.lineBetween(4, 28, 16, 32);
+    g.lineBetween(4, 31, 15, 28);
     // body
     g.fillStyle(PAL.beaverFur, 1);
     g.fillEllipse(28, 25, 30, 20);
@@ -44,9 +56,14 @@ export function generateTextures(scene: Phaser.Scene): void {
     g.fillEllipse(48, 22, 8, 6);
     g.fillStyle(PAL.beaverTooth, 1);
     g.fillRect(48, 24, 3, 4);
-    // eye
+    // nose
     g.fillStyle(0x2a2118, 1);
+    g.fillEllipse(51, 20, 3, 2.4);
+    // eye
     g.fillCircle(44, 17, 1.6);
+    // belly warmth
+    g.fillStyle(mix(PAL.beaverFurLight, 0xffffff, 0.18), 0.8);
+    g.fillEllipse(28, 30, 20, 7);
     // feet
     g.fillStyle(PAL.beaverTail, 1);
     g.fillEllipse(22, 35, 8, 5);

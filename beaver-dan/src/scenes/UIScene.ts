@@ -1,18 +1,21 @@
 import Phaser from 'phaser';
 import { PAL, mix } from '../palette';
 import { FIELD_NOTES } from '../facts';
+import { sfx } from '../audio';
 
 const W = 1280;
 const H = 720;
 const SERIF = 'Georgia, "Times New Roman", serif';
 
 /**
- * HUD overlay: objective card, energy, clock, virtual joystick + action
- * button (touch), field-note cards and the day/night light wash.
+ * HUD overlay: objective card, energy, clock, virtual joystick + two touch
+ * verbs (context action, tail-slap/dive), field-note cards, the day/night
+ * light wash, and cinematic letterboxing for the flood sweep.
  */
 export class UIScene extends Phaser.Scene {
   private nightRect!: Phaser.GameObjects.Image;
   private dangerRect!: Phaser.GameObjects.Image;
+  private objCard!: Phaser.GameObjects.Container;
   private objectiveTitle!: Phaser.GameObjects.Text;
   private objectiveHint!: Phaser.GameObjects.Text;
   private objectiveProgress!: Phaser.GameObjects.Text;
@@ -20,6 +23,9 @@ export class UIScene extends Phaser.Scene {
   private energyFill!: Phaser.GameObjects.Graphics;
   private actionBtn!: Phaser.GameObjects.Container;
   private actionLabel!: Phaser.GameObjects.Text;
+  private bBtn!: Phaser.GameObjects.Container;
+  private bLabel!: Phaser.GameObjects.Text;
+  private muteBtn!: Phaser.GameObjects.Text;
   private joyBase!: Phaser.GameObjects.Arc;
   private joyKnob!: Phaser.GameObjects.Arc;
   private joyPointerId: number | null = null;
@@ -27,6 +33,8 @@ export class UIScene extends Phaser.Scene {
   private noteQueue: string[] = [];
   private noteShowing = false;
   private danger = false;
+  private barTop!: Phaser.GameObjects.Image;
+  private barBottom!: Phaser.GameObjects.Image;
 
   constructor() {
     super('UI');
@@ -35,6 +43,7 @@ export class UIScene extends Phaser.Scene {
   create(): void {
     this.noteQueue = [];
     this.noteShowing = false;
+    this.danger = false;
 
     this.nightRect = this.add
       .image(0, 0, 'px')
@@ -48,6 +57,12 @@ export class UIScene extends Phaser.Scene {
       .setDisplaySize(W, H)
       .setTint(PAL.uiBad)
       .setAlpha(0);
+    // a soft painterly vignette pulls the frame together
+    this.add.image(W / 2, H / 2, 'vignette').setAlpha(0.5);
+
+    // cinematic letterbox bars (slide in during the flood sweep)
+    this.barTop = this.add.image(0, -64, 'px').setOrigin(0).setDisplaySize(W, 64).setTint(0x101820);
+    this.barBottom = this.add.image(0, H, 'px').setOrigin(0).setDisplaySize(W, 64).setTint(0x101820);
 
     this.buildObjectiveCard();
     this.buildStatusBar();
@@ -58,11 +73,13 @@ export class UIScene extends Phaser.Scene {
     g.on('toast', this.showToast, this);
     g.on('danger', this.setDanger, this);
     g.on('objectiveComplete', this.celebrate, this);
+    g.on('cinematic', this.setCinematic, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       g.off('note', this.queueNote, this);
       g.off('toast', this.showToast, this);
       g.off('danger', this.setDanger, this);
       g.off('objectiveComplete', this.celebrate, this);
+      g.off('cinematic', this.setCinematic, this);
     });
 
     this.registry.events.on('changedata', this.onData, this);
@@ -99,6 +116,7 @@ export class UIScene extends Phaser.Scene {
       color: '#d9803e',
       fontStyle: 'bold'
     }).setOrigin(1, 0);
+    this.objCard = this.add.container(0, 0, [card, this.objectiveTitle, this.objectiveHint, this.objectiveProgress]);
   }
 
   private buildStatusBar(): void {
@@ -119,12 +137,23 @@ export class UIScene extends Phaser.Scene {
       fontSize: '15px',
       color: '#7a6f5c'
     }).setOrigin(0.5);
+
+    this.muteBtn = this.add.text(W - 24, 92, sfx.muted ? '🔇' : '🔊', { fontSize: '24px' })
+      .setOrigin(1, 0)
+      .setAlpha(0.8)
+      .setInteractive({ useHandCursor: true });
+    this.muteBtn.on('pointerdown', () => {
+      sfx.unlock();
+      sfx.setMuted(!sfx.muted);
+      this.muteBtn.setText(sfx.muted ? '🔇' : '🔊');
+    });
   }
 
   private buildTouchControls(): void {
     this.joyBase = this.add.circle(0, 0, 54, 0xffffff, 0.12).setStrokeStyle(2, 0xffffff, 0.25).setVisible(false);
     this.joyKnob = this.add.circle(0, 0, 24, 0xffffff, 0.22).setVisible(false);
 
+    // A: context action
     const btn = this.add.circle(0, 0, 52, PAL.uiAccent, 0.85).setStrokeStyle(3, 0xfff8ea, 0.7);
     this.actionLabel = this.add.text(0, 0, '', {
       fontFamily: SERIF,
@@ -140,9 +169,26 @@ export class UIScene extends Phaser.Scene {
     btn.on('pointerup', () => this.game.events.emit('actionState', false));
     btn.on('pointerout', () => this.game.events.emit('actionState', false));
 
-    // left-half drag = joystick
+    // B: tail-slap (tap) / dive (hold) — water verbs
+    const bCircle = this.add.circle(0, 0, 42, PAL.waterDeep, 0.85).setStrokeStyle(3, 0xfff8ea, 0.6);
+    this.bLabel = this.add.text(0, 0, '', {
+      fontFamily: SERIF,
+      fontSize: '12px',
+      color: '#fff8ea',
+      fontStyle: 'bold',
+      align: 'center',
+      wordWrap: { width: 72 }
+    }).setOrigin(0.5);
+    this.bBtn = this.add.container(W - 92, H - 210, [bCircle, this.bLabel]).setAlpha(0.25);
+    bCircle.setInteractive(new Phaser.Geom.Circle(0, 0, 50), Phaser.Geom.Circle.Contains);
+    bCircle.on('pointerdown', () => this.game.events.emit('bState', true));
+    bCircle.on('pointerup', () => this.game.events.emit('bState', false));
+    bCircle.on('pointerout', () => this.game.events.emit('bState', false));
+
+    // left-half drag = joystick (kept clear of the objective card up top)
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (p.x > W * 0.55 || this.joyPointerId !== null) return;
+      sfx.unlock();
+      if (p.x > W * 0.55 || p.y < 120 || this.joyPointerId !== null) return;
       this.joyPointerId = p.id;
       this.joyOrigin = { x: p.x, y: p.y };
       this.joyBase.setPosition(p.x, p.y).setVisible(true);
@@ -206,6 +252,10 @@ export class UIScene extends Phaser.Scene {
     this.actionLabel.setText(label);
     this.actionBtn.setAlpha(label ? 1 : 0.22);
 
+    const bLabel = (this.registry.get('bLabel') as string) ?? '';
+    this.bLabel.setText(bLabel);
+    this.bBtn.setAlpha(bLabel ? 1 : 0.18);
+
     if (this.danger) {
       this.dangerRect.setAlpha(0.08 + Math.sin(this.time.now / 140) * 0.05);
     }
@@ -214,6 +264,16 @@ export class UIScene extends Phaser.Scene {
   private setDanger(on: boolean): void {
     this.danger = on;
     if (!on) this.dangerRect.setAlpha(0);
+  }
+
+  private setCinematic(on: boolean): void {
+    this.tweens.add({ targets: this.barTop, y: on ? 0 : -64, duration: 500, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: this.barBottom, y: on ? H - 64 : H, duration: 500, ease: 'Sine.easeInOut' });
+    this.tweens.add({
+      targets: [this.objCard, this.actionBtn, this.bBtn],
+      alpha: on ? 0 : 1,
+      duration: 400
+    });
   }
 
   private celebrate(): void {
@@ -249,6 +309,7 @@ export class UIScene extends Phaser.Scene {
       return;
     }
     this.noteShowing = true;
+    sfx.chime();
 
     const cw = 620;
     const bodyText = this.make.text({

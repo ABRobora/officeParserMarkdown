@@ -30,6 +30,10 @@ export class World {
   readonly baseWater = 0.45;
   /** Rises 0 → 4 as logs are woven into the dam. */
   damStage = 0;
+  /** What the renderer shows — tweened toward damStage during flood cinematics. */
+  visualStage = 0;
+  /** Tiles the player has dug out to float wood through. */
+  readonly canals: Site[] = [];
 
   readonly damSite: Site;
   readonly lodgeSite: Site;
@@ -80,6 +84,11 @@ export class World {
     return ty <= this.damTy ? this.baseWater + this.damStage * 0.45 : this.baseWater;
   }
 
+  /** Same, but at the tweened visual stage (used only for drawing). */
+  waterLevelVisualAt(ty: number): number {
+    return ty <= this.damTy ? this.baseWater + this.visualStage * 0.45 : this.baseWater;
+  }
+
   isWater(tx: number, ty: number): boolean {
     return this.elevation(tx, ty) < this.waterLevelAt(Math.round(ty));
   }
@@ -126,5 +135,31 @@ export class World {
       }
     }
     return drowned;
+  }
+
+  /** An unrepaired leak tears wider overnight: the pond drops a stage. */
+  lowerDam(): void {
+    this.damStage = Math.max(0, this.damStage - 1);
+    this.visualStage = this.damStage;
+  }
+
+  /**
+   * Dig a canal tile: beavers excavate channels so wood can be floated
+   * instead of dragged. The tile's ground drops below the local waterline.
+   */
+  digCanal(tx: number, ty: number): void {
+    const ix = Math.max(0, Math.min(this.W - 1, Math.round(tx)));
+    const iy = Math.max(0, Math.min(this.H - 1, Math.round(ty)));
+    this.elevMap[iy * this.W + ix] = this.baseWater - 0.25;
+    this.canals.push({ tx: ix, ty: iy });
+  }
+
+  /** True if the rounded tile touches water on any side — diggable ground. */
+  bordersWater(tx: number, ty: number): boolean {
+    const ix = Math.round(tx);
+    const iy = Math.round(ty);
+    return (
+      this.isWater(ix + 1, iy) || this.isWater(ix - 1, iy) || this.isWater(ix, iy + 1) || this.isWater(ix, iy - 1)
+    );
   }
 }

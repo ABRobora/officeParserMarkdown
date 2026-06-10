@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { PAL, mix } from '../palette';
+import { sfx } from '../audio';
+import { hasSave, clearSave } from '../save';
 
 const W = 1280;
 const H = 720;
@@ -67,11 +69,48 @@ export class TitleScene extends Phaser.Scene {
     }).setOrigin(0.5).setAlpha(0.9);
     this.tweens.add({ targets: title, y: H * 0.215, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    this.makeButton(W / 2, H * 0.56, 'BEGIN', () => this.scene.start('Story'));
-    this.makeButton(W / 2, H * 0.56 + 86, 'HELP REAL BEAVERS', () => this.scene.start('Donate'), true);
+    // gentle piano motif once the platform lets us make sound
+    const wakeAudio = () => {
+      sfx.unlock();
+      sfx.startMotif();
+    };
+    this.input.once('pointerdown', wakeAudio);
+    this.input.keyboard?.once('keydown', wakeAudio);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.off('pointerdown', wakeAudio);
+    });
+
+    let y = H * 0.5;
+    const step = 76;
+    if (hasSave()) {
+      this.makeButton(W / 2, y, 'CONTINUE', () => {
+        sfx.stopMotif();
+        this.scene.start('Game', { load: true });
+      });
+      y += step;
+    }
+    this.makeButton(W / 2, y, hasSave() ? 'NEW JOURNEY' : 'BEGIN', () => {
+      clearSave();
+      sfx.stopMotif();
+      this.scene.start('Story');
+    });
+    y += step;
+    this.makeButton(W / 2, y, 'FIELD JOURNAL', () => this.scene.start('Journal'), true);
+    y += step;
+    this.makeButton(W / 2, y, 'HELP REAL BEAVERS', () => this.scene.start('Donate'), true);
+
+    const muteBtn = this.add.text(W - 20, 18, sfx.muted ? '🔇' : '🔊', { fontSize: '26px' })
+      .setOrigin(1, 0)
+      .setAlpha(0.85)
+      .setInteractive({ useHandCursor: true });
+    muteBtn.on('pointerdown', () => {
+      sfx.unlock();
+      sfx.setMuted(!sfx.muted);
+      muteBtn.setText(sfx.muted ? '🔇' : '🔊');
+    });
 
     this.add.text(W / 2, H - 18,
-      'free forever · donations go to beaver & wetland charities · sounds and final art in progress',
+      'free forever · donations go to beaver & wetland charities · all art and sound generated in code (final assets in progress)',
       { fontFamily: SERIF, fontSize: '14px', color: '#fff8ea' }
     ).setOrigin(0.5).setAlpha(0.55);
   }

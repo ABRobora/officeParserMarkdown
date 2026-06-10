@@ -6,6 +6,7 @@ import { GameScene } from './scenes/GameScene';
 import { LodgeScene } from './scenes/LodgeScene';
 import { UIScene } from './scenes/UIScene';
 import { DonateScene } from './scenes/DonateScene';
+import { JournalScene } from './scenes/JournalScene';
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -20,7 +21,7 @@ const game = new Phaser.Game({
   input: {
     activePointers: 3 // joystick + action button simultaneously
   },
-  scene: [BootScene, TitleScene, StoryScene, GameScene, LodgeScene, UIScene, DonateScene]
+  scene: [BootScene, TitleScene, StoryScene, GameScene, LodgeScene, UIScene, DonateScene, JournalScene]
 });
 
 // handle for debugging and the headless smoke test

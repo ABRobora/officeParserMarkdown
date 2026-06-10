@@ -1,7 +1,7 @@
 node_modules/
 dist/
-ios/
-android/
 .DS_Store
 *.local
 scripts/*.png
+# native projects (android/, ios/) are committed; their own .gitignores
+# exclude build output and the cap-sync'd web assets

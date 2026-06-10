@@ -4,8 +4,9 @@ import { isoToScreen, isoDepth } from '../iso';
 import { Beaver } from './beaver';
 
 /**
- * A wolf hunts the valley at night. It will not wade into deep water —
- * which is the whole point of being a beaver with a pond.
+ * A wolf hunts the valley at night. It will wade — shallow water is NOT
+ * safe — but it will not swim into deep water. Only the deep water a dam
+ * creates is true sanctuary, and a submerged beaver is an invisible one.
  */
 export class Wolf {
   tx: number;
@@ -14,12 +15,14 @@ export class Wolf {
 
   static readonly SPEED = 2.5; // faster than Dan walks, slower than he swims
   static readonly SENSE = 11; // tiles
+  static readonly LUNGE = 1.5; // reach into shallow water
 
   readonly container: Phaser.GameObjects.Container;
   private body: Phaser.GameObjects.Image;
   private lope = 0;
   private wanderAngle = Math.random() * Math.PI * 2;
   private wanderTimer = 0;
+  private fleeTimer = 0;
 
   constructor(scene: Phaser.Scene, private world: World) {
     this.tx = 6;
@@ -39,6 +42,7 @@ export class Wolf {
         this.tx = tx;
         this.ty = ty;
         this.active = true;
+        this.fleeTimer = 0;
         this.container.setVisible(true);
         return;
       }
@@ -50,21 +54,42 @@ export class Wolf {
     this.container.setVisible(false);
   }
 
-  /** @returns 'caught' when the wolf reaches Dan on land. */
+  /** A nearby tail-slap sends the wolf loping for the treeline. */
+  scare(): void {
+    this.fleeTimer = 9;
+  }
+
+  /** @returns 'caught' when the wolf reaches Dan on land or lunges into the shallows. */
   update(dt: number, dan: Beaver): 'caught' | 'hunting' | 'idle' {
     if (!this.active) return 'idle';
 
+    const danInDeep = this.world.isDeepWater(dan.tx, dan.ty);
     const danInWater = this.world.isWater(dan.tx, dan.ty);
+    const danVisible = !dan.submerged && !danInDeep;
     const d = Math.hypot(dan.tx - this.tx, dan.ty - this.ty);
     let result: 'caught' | 'hunting' | 'idle' = 'idle';
 
     let dirX: number;
     let dirY: number;
-    if (!danInWater && d < Wolf.SENSE) {
+    let speed: number;
+
+    if (this.fleeTimer > 0) {
+      this.fleeTimer -= dt;
+      dirX = (this.tx - dan.tx) / (d || 1);
+      dirY = (this.ty - dan.ty) / (d || 1);
+      speed = Wolf.SPEED * 1.1;
+      if (this.fleeTimer <= 0 || this.tx < 3 || this.ty < 3 || this.tx > this.world.W - 3 || this.ty > this.world.H - 3) {
+        this.despawn();
+        return 'idle';
+      }
+    } else if (danVisible && d < Wolf.SENSE) {
       dirX = (dan.tx - this.tx) / (d || 1);
       dirY = (dan.ty - this.ty) / (d || 1);
+      speed = Wolf.SPEED;
       result = 'hunting';
-      if (d < 0.8) result = 'caught';
+      // on land it must close fully; into the shallows it can lunge
+      const catchRange = danInWater ? Wolf.LUNGE : 0.8;
+      if (d < catchRange) result = 'caught';
     } else {
       this.wanderTimer -= dt;
       if (this.wanderTimer <= 0) {
@@ -73,12 +98,12 @@ export class Wolf {
       }
       dirX = Math.cos(this.wanderAngle) * 0.35;
       dirY = Math.sin(this.wanderAngle) * 0.35;
+      speed = Wolf.SPEED * 0.4;
     }
 
-    const speed = result === 'hunting' ? Wolf.SPEED : Wolf.SPEED * 0.4;
     const nx = this.tx + dirX * speed * dt;
     const ny = this.ty + dirY * speed * dt;
-    // wolves skirt the shoreline rather than swim
+    // wolves wade the margins but never swim the deep
     if (this.world.inBounds(nx, this.ty) && !this.world.isDeepWater(nx, this.ty)) this.tx = nx;
     else this.wanderTimer = 0;
     if (this.world.inBounds(this.tx, ny) && !this.world.isDeepWater(this.tx, ny)) this.ty = ny;
